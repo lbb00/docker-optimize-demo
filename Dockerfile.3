@@ -1,0 +1,16 @@
+FROM node:16-alpine as builder
+WORKDIR /app
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile
+COPY tsconfig.json app.vue nuxt.config.ts ./
+RUN yarn build
+RUN rm -rf ./node_modules
+RUN yarn install --frozen-lockfile --production --ignore-scripts
+
+FROM node:16-alpine
+EXPOSE 3000
+WORKDIR /app
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/.output .
+ENTRYPOINT ["node"]
+CMD ["./server/index.mjs"]
